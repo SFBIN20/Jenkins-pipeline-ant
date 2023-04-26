@@ -1,0 +1,43 @@
+<project xmlns:sf="antlib:com.salesforce" name="releaseOrSprintNameGoesHere" default="test" basedir=".">
+<property file="build.properties"/>
+<property environment="env"/>
+
+<!--  STEP 1: Incremental backup Target  -->
+<target name="target">
+<mkdir dir="target"/>
+<sf:retrieve username="${sf-target.username}" password="${sf-target.password}" serverurl="${sf-prod.serverurl}" retrieveTarget="target" unpackaged="package.xml" pollWaitMillis="10000" maxPoll="240"/>
+</target>
+
+<!--  STEP 2: Retrieve config from Source  -->
+<target name="src">
+<mkdir dir="src"/>
+<sf:retrieve username="${sf-source.username}" password="${sf-source.password}" serverurl="${sf-sbx.serverurl}" retrieveTarget="src" unpackaged="package.xml" pollWaitMillis="10000" maxPoll="20"/>
+</target>
+
+<!--  STEP 3: Validate Deployment  -->
+<target name="validate">
+<sf:deploy username="${sf-target.username}" password="${sf-target.password}" serverurl="${sf-prod.serverurl}" deployRoot="src" checkOnly="true"/>
+<!--<sf:deploy username="${sf-target.username}" password="${sf-target.password}"
+               serverurl="${sf-prod.serverurl}" deployRoot="src" checkOnly="true" testLevel="RunSpecifiedTests">
+      <runTest>CaseNewCaseControllerTest</runTest>
+
+    </sf:deploy> -->
+</target>
+
+<!--  STEP 4: Deploy changes to Target  -->
+<target name="deploy">
+<sf:deploy username="${sf-target.username}" password="${sf-target.password}" serverurl="${sf-prod.serverurl}" deployRoot="src" pollWaitMillis="10000" maxPoll="5000"/>
+</target>
+
+<!-- Shows removing code; only succeeds if done after deployCode -->
+    <target name="undeployCode">
+      <sf:deploy username="${sf-target.username}" password="${sf-target.password}" serverurl="${sf-prod.serverurl}" deployRoot="removecodepkg" pollWaitMillis="10000" maxPoll="5000"/>
+    </target>
+<!-- Call up Diffmerge -->
+<target name="openDiffmerge">
+    <exec executable="Diffmerge" spawn="true">
+      <arg line="backupTarget/ src/"/>
+    </exec>
+  </target>
+ 
+</project>
